@@ -237,6 +237,7 @@ void myVolumeInformation(string disk) {
     char VolumeNameBuffer[100];
     char FileSystemNameBuffer[100];
     unsigned long VolumeSerialNumber;
+    DWORD VolumeFlags;
 
     cout << endl << "Работа функции GetVolumeInformationA:" << endl;
     BOOL GetVolumeInformationFlag = GetVolumeInformationA(
@@ -245,7 +246,7 @@ void myVolumeInformation(string disk) {
         100,
         &VolumeSerialNumber,
         NULL, 
-        NULL, 
+        &VolumeFlags, 
         FileSystemNameBuffer,
         100
     );
@@ -255,6 +256,32 @@ void myVolumeInformation(string disk) {
         cout << endl << "	Имя диска:  " << VolumeNameBuffer << endl;
         cout << "	Серийный номер диска:  " << VolumeSerialNumber << endl;
         cout << "	Файловая система:  " << FileSystemNameBuffer << endl;
+
+        cout << endl << "	Флаги файловой системы: ";
+        if (VolumeFlags & FS_CASE_IS_PRESERVED)
+            cout << endl << "	При записи на диск сохраняется регистр букв в имени файла";
+        if (VolumeFlags & FS_CASE_SENSITIVE)
+            cout << endl << "	Файловая система поддерживает поиск файлов с учетом регистра букв в именах";
+        if (VolumeFlags & FS_UNICODE_STORED_ON_DISK)
+            cout << endl << "	Файловая система поддерживает хранение на диске имен файлов в UNICODE";
+        if (VolumeFlags & FS_PERSISTENT_ACLS)
+            cout << endl << "	Файловая система способна оперировать со списками контроля доступа(ACL).";
+        if (VolumeFlags & FS_FILE_COMPRESSION)
+            cout << endl << "	Файловая система поддерживает сжатие файлов";
+        if (VolumeFlags & FS_VOL_IS_COMPRESSED)
+            cout << endl << "	Том был подвергнут сжатию";
+        if (VolumeFlags & FILE_NAMED_STREAMS)
+            cout << endl << "	Файловая система поддерживает именованные потоки";
+        if (VolumeFlags & FILE_SUPPORTS_ENCRYPTION)
+            cout << endl << "	Файловая система поддерживает Encrypted File System (EFS)";
+        if (VolumeFlags & FILE_SUPPORTS_OBJECT_IDS)
+            cout << endl << "	Файловая система поддерживает идентификаторы объектов";
+        if (VolumeFlags & FILE_SUPPORTS_REPARSE_POINTS)
+            cout << endl << "	Файловая система поддерживает точки повторного разбора";
+        if (VolumeFlags & FILE_SUPPORTS_SPARSE_FILES)
+            cout << endl << "	Файловая система поддерживает разреженные файлы";
+        if (VolumeFlags & FILE_VOLUME_QUOTAS)
+            cout << endl << "	Файловая система поддерживает дисковые квоты";
     }
     else cout << endl << "	Данный диск отсутствует" << endl;
     cout << endl;
