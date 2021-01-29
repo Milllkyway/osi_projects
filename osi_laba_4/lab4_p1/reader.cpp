@@ -19,17 +19,17 @@ int main() {
 	string s3 = "rSemaphore";
 	char text[PG_SIZE];
 
-	srand(time(NULL));
+	srand(time(NULL)); // для корректного генерирования рандомных чисел
 	HANDLE mappedHandle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, s1.c_str());
 
 	fstream log;
 	string logerName = "D:\\LOG_READER.txt";
-	log.open(logerName, std::fstream::app | std::fstream::out);
+	log.open(logerName, std::fstream::app | std::fstream::out);  // app - все значения добавляются в конец, out - файл открыт для записи
 
 	void* mapFile;
-	mapFile = MapViewOfFile(mappedHandle, FILE_MAP_ALL_ACCESS, 0, 0, PAGE_NUM * PG_SIZE);
+	mapFile = MapViewOfFile(mappedHandle, FILE_MAP_ALL_ACCESS, 0, 0, PAGE_NUM * PG_SIZE);  // старшее и младшее слово смещения, последнее - число отображаемых байтов
 	if (!mapFile) cout << "error opening file";
-	HANDLE wSemaphore = OpenSemaphoreA(SEMAPHORE_MODIFY_STATE | SYNCHRONIZE, FALSE, s2.c_str());
+	HANDLE wSemaphore = OpenSemaphoreA(SEMAPHORE_MODIFY_STATE | SYNCHRONIZE, FALSE, s2.c_str()); // доступ на изменения состояния для семафора, право исп объект для синхронизации
 	if (wSemaphore == 0) cout << "semaphore error";
 	HANDLE rSemaphore = OpenSemaphoreA(SEMAPHORE_MODIFY_STATE | SYNCHRONIZE, FALSE, s3.c_str());
 	if (rSemaphore == 0) cout << "semaphore read error";

@@ -1,7 +1,6 @@
 ﻿#include <iostream>
 #include <windows.h>
 #include <locale.h>
-//#include <cmath>
 #include <mutex>
 #include <cassert>
 #include <iomanip>
@@ -21,10 +20,11 @@ class CAutoMutex
     HANDLE hMutex;
 
 public:
-    CAutoMutex()
-    {
-        hMutex = CreateMutex(NULL, FALSE, NULL);
-        assert(hMutex);
+    CAutoMutex() {
+        hMutex = CreateMutex(NULL,      // атрибут безопастности
+                             FALSE,     // флаг начального владельца
+                             NULL);     // имя объекта
+        assert(hMutex); // используется для дебага (сравнивает аргумент с нулем)
     }
 
     ~CAutoMutex() { CloseHandle(hMutex); }
@@ -39,7 +39,7 @@ class CMutexLock
 
 public:
     // занимаем мютекс при конструировании объекта
-    CMutexLock(HANDLE mutex) : m_mutex(mutex)
+    CMutexLock(HANDLE mutex) : m_mutex(mutex) // m_mutex(mutex) инициализирует члены класса перед выполнением тела конструктора
     {
         const DWORD res = WaitForSingleObject(m_mutex, INFINITE);
         assert(res == WAIT_OBJECT_0);
@@ -83,7 +83,12 @@ int main()
     sharedInfo.offset = threadsNum * blockSize;
 
     for (int i = 0; i < threadsNum; i++) {
-        hThreads[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadCountPi, (LPVOID)i, CREATE_SUSPENDED, NULL);
+        hThreads[i] = CreateThread(NULL,                                        // дескриптор защиты (0 - не мб унаследован)
+                                   0,                                           // начальный размер стека (0 - по умолчанию размер стека исполняемой программы)
+                                   (LPTHREAD_START_ROUTINE)ThreadCountPi,       // указатель на LPTHREAD_START_ROUTINE, код которой исполняется потоком и обозначает начальный адрес потока
+                                   (LPVOID)i,                                   // параметр потока
+                                   CREATE_SUSPENDED,                            // опции создания (CREATE_SUSPENDED создается поток в состоянии ожидания, ждет ResumeThread)
+                                   NULL);                                       // идентификатор потока
         assert(hThreads[i]);
     }
 
@@ -95,7 +100,11 @@ int main()
         assert(err != -1);
     }
 
-    WaitForMultipleObjects(threadsNum, hThreads, TRUE, INFINITE);
+    WaitForMultipleObjects(threadsNum,          // число объектов в массиве hThreads
+                           hThreads,            // указатель на массив дескрипторов
+                           TRUE,                // флаг, указывающий надо ли дожидаться всех объектов или достаточно одного
+                           INFINITE);           // таймаут
+    
     sharedInfo.piCounted /= N;
     
     finish = timeGetTime();

@@ -171,7 +171,7 @@ int menu() {
 
 // 1 - вывод списка дисков
 void myLogicalDrives() {
-    cout << endl << "Работа функции GetLogicalDrives:" << endl;
+    cout << endl << "Работа функции GetLogicalDrives:" << endl; // получает список доступных томов
     bitset<26> MyBs(GetLogicalDrives());
     cout << endl << "	" << MyBs << endl;
     cout << "	Доступные диски:" << endl << "	";
@@ -206,7 +206,7 @@ void myDriveType(string disk) {
     int driveType;
 
     cout << endl << "Работа функции GetDriveType:" << endl;
-    driveType = GetDriveTypeA((LPCSTR)disk.c_str());
+    driveType = GetDriveTypeA((LPCSTR)disk.c_str()); // получает инфу о диске
     switch (driveType) {
     case 0:
         cout << endl << "	Тип устройства определить не удалось" << endl;
@@ -241,14 +241,14 @@ void myVolumeInformation(string disk) {
 
     cout << endl << "Работа функции GetVolumeInformationA:" << endl;
     BOOL GetVolumeInformationFlag = GetVolumeInformationA(
-        (LPCSTR)disk.c_str(),
-        VolumeNameBuffer,
-        100,
-        &VolumeSerialNumber,
-        NULL, 
-        &VolumeFlags, 
-        FileSystemNameBuffer,
-        100
+        (LPCSTR)disk.c_str(),     // Корневой каталог диска, например "c:\" или "a:\"
+        VolumeNameBuffer,         // Буфер, который получает имя указанного диска
+        100,                      // Длина буфера в символах
+        &VolumeSerialNumber,      // Указатель на переменную, которая получает серийный номер диска
+        NULL,                     // Переменная, которая получает максимальную длину в символах компонента имени файла, поддержанного указанной файловой системой
+        &VolumeFlags,             // Переменная, которая получает флажки, связанные с указанной файловой системой. 
+        FileSystemNameBuffer,     // Указатель на буфер,который получает название файловой системы 
+        100                       // Определяет длину в символах буфера для имени файловых систем
     );
 
     if (GetVolumeInformationFlag != 0)
@@ -294,6 +294,7 @@ void myDiskFreeSpace(string disk) {
 
     cout << endl << "Работа функции GetDiskFreeSpace:" << endl;
 
+    // возвращает информацию относительно количества места на диске
     BOOL GetDiskFreeSpaceFlag = GetDiskFreeSpaceExA(
         (LPCSTR)disk.c_str(),					  // directory name
         (PULARGE_INTEGER)&FreeBytesAvailable,     // bytes available to caller
@@ -327,7 +328,8 @@ void myCreateDirectory() {
     cin >> dir;
 
     name = disk + dir;
-
+    
+    // второй параметр - атрибуты безопасности (только для Windows NT !NULL)
     if (CreateDirectoryA((LPCSTR)name.c_str(), NULL))
         cout << endl << "	Каталог " << name << " создан." << endl;
     else
@@ -363,8 +365,13 @@ void myCreateFile() {
 
     file_path = my_path + my_name;
 
-    hfile = CreateFileA((LPCSTR)file_path.c_str(), GENERIC_READ |
-        GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
+    hfile = CreateFileA((LPCSTR)file_path.c_str(),
+                        GENERIC_READ | GENERIC_WRITE, // режим доступа
+                        0,                            // совместный доступ
+                        NULL,                         // дескрипторы защиты
+                        CREATE_NEW,                   // как действовать
+                        0,                            // атрибуты файла
+                        NULL);                        // дескрипторы шаблона файла (должен быть NULL)
     if (hfile)
         cout << endl << "	Файл " << file_path << " был создан." << endl;
     else
@@ -386,7 +393,7 @@ void myCopyFile() {
     cout << "	Введите новое имя и путь к файлу, который нужно создать: ";
     cin >> new_name;
 
-    if (CopyFileA((LPCSTR)old_name.c_str(), (LPCSTR)new_name.c_str(), 0))
+    if (CopyFileA((LPCSTR)old_name.c_str(), (LPCSTR)new_name.c_str(), 0)) // если 1, то если новый файл уже существует, то ошибка; если 0, то файл записывается поверх существующего
         cout << endl << "	Файл " << old_name << " был скопирован." << endl;
     else {
         if (GetLastError() == 183)
@@ -429,7 +436,9 @@ void myMoveFileEx() {
     cin >> new_path;
 
 
-    if (MoveFileExA((LPCSTR)old_path.c_str(), (LPCSTR)new_path.c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING))
+    if (MoveFileExA((LPCSTR)old_path.c_str(),
+        (LPCSTR)new_path.c_str(),
+        MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING)) // параметры перемещения (1 - имитирует копирование при перемещении в др том, 2 - замещает существующий файл)
         cout << endl << "	Элемент " << old_path << " был перемещен." << endl;
     else
         cout << endl << "	Ошибка. Перемещение не было выполнено." << endl;
@@ -604,10 +613,11 @@ void myGetFileTime() {
     if (!hfile)
         cout << endl << "	Ошибка." << endl;
     else {
+        //  извлекает данные о дате и времени, когда файл был создан, последнего доступа и последнего изменения.
         GetFileTime(hfile, &creat_time, &acc_time, &wr_time);
 
-        FileTimeToSystemTime(&creat_time, &UTCtime);
-        SystemTimeToTzSpecificLocalTime(NULL, &UTCtime, &localTime);
+        FileTimeToSystemTime(&creat_time, &UTCtime); // FILETIME to SYSTEMFILE
+        SystemTimeToTzSpecificLocalTime(NULL, &UTCtime, &localTime); // UTC to local time
         printf("	Время создания файла: %02d.%02d.%02d %02d:%02d\n", localTime.wDay, localTime.wMonth, localTime.wYear,
             localTime.wHour, localTime.wMinute);
 

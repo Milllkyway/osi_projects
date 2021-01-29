@@ -14,13 +14,18 @@ int main()
 
 	cout << endl << "Работа программы-читателя..." << endl;
 
-
 	cout << endl << "Введите дескриптор потока (такой же, как и в программе-писателе): ";
 	cin >> threadDesc;
 
-	hMap = OpenFileMapping(FILE_MAP_READ, false, (LPCWSTR)threadDesc.c_str());
+	hMap = OpenFileMapping(FILE_MAP_READ,					// режим доступа
+						   false,							// наследование
+						   (LPCWSTR)threadDesc.c_str());	// имя проецируемого файла
 	if (hMap) {
-		adOfMapView = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
+		adOfMapView = MapViewOfFile(hMap,					// дескриптор проецируемого файла
+									FILE_MAP_READ,			// режим доступа
+									0,						// старшее DWORD смещения
+									0,						// младшее
+									0);						// число отображаемых байтов (0 значит весь файл)
 		if (adOfMapView) {
 			cout << endl << "Данные из файла: \n"<< (char*)adOfMapView;
 			cout << endl << endl;

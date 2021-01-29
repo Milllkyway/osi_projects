@@ -8,13 +8,22 @@
 
 #define ONEBLOCK 4096 // размер кластера диска
 
+/*typedef struct _OVERLAPPED {
+	ULONG_PTR Internal;				// используется системой
+	ULONG_PTR InternalHigh;			// используется системой
+	DWORD Offset;					// смещение байта от начала файла 
+	DWORD OffsetHigh;				// !0 когда работаем с файлом
+	HANDLE hEvent;					// дескриптор события, которые должно быть установлено в сигнальное состояние, когда операция завершилась
+} OVERLAPPED;*/						// ReadFile и WriteFile устанавливают этот дескриптор в несигнальное состояние прежде, чем они начинают I/O
+
 HANDLE inFileHandle, outFileHandle;
-OVERLAPPED *ovrIn, *ovrOut;
+OVERLAPPED *ovrIn, *ovrOut; // содержит информацию, используемую в асинхронном I/O
 CHAR** buf;
 LONGLONG nRecords, nDoneRead, nDoneWrite;
 LARGE_INTEGER fileSize;
 INT operatNum, totalBlock;
 
+// вызываются функциями, в которых они указаны
 VOID WINAPI ReadCallback(DWORD error, DWORD numberOfBytes, LPOVERLAPPED pOvr);
 VOID WINAPI WriteCallback(DWORD error, DWORD numberOfBytes, LPOVERLAPPED pOvr);
 
@@ -41,10 +50,10 @@ int main()
 		cin >> operatNum;
 		cout << endl;
 
-		totalBlock = ONEBLOCK * blocksNum;
+		totalBlock = ONEBLOCK * blocksNum; // итоговый размер блоков
 
-		inFileHandle = CreateF(true);
-		outFileHandle = CreateF(false);
+		inFileHandle = CreateF(true); // открывает существующий файл
+		outFileHandle = CreateF(false); // создает новый файл
 
 		if ((inFileHandle != INVALID_HANDLE_VALUE) && (outFileHandle != INVALID_HANDLE_VALUE))
 		{
@@ -52,22 +61,23 @@ int main()
 			buf = new CHAR * [totalBlock];
 
 			for (int k = 0; k < operatNum; k++)
-				buf[k] = new CHAR[totalBlock];
+				buf[k] = new CHAR[totalBlock]; //  массив для размещения в нем кодов N символов с указателем buf на его начало
 
 			ovrIn = new OVERLAPPED[totalBlock];
 			ovrOut = new OVERLAPPED[totalBlock];
 
 			BY_HANDLE_FILE_INFORMATION fileInformation;
 
-			if (!GetFileInformationByHandle(inFileHandle, &fileInformation))
-			{
+			// заполняем fileInformation для вычисления fileSize
+			if (!GetFileInformationByHandle(inFileHandle, &fileInformation)){
 				cout << "Error!";
 				return 0;
 			}
 
 			fileSize.LowPart = (fileInformation.nFileSizeHigh *(MAXDWORD + 1)) + fileInformation.nFileSizeLow;
 			cout << endl << "Размер файла: " << (fileSize.QuadPart / 1024) + 1<< " Kb" << endl;
-
+			
+			// QuadPart	oпределяет 64-х битное знаковое целое для large_integer
 			nRecords = fileSize.QuadPart / totalBlock + (fileSize.QuadPart % totalBlock > 0 ? 1 : 0);
 			cout << "Число записей: " << nRecords << endl;
 
@@ -94,13 +104,9 @@ int main()
 
 			nDoneRead = 0;
 			while (nDoneRead < nRecords)
-				SleepEx(INFINITE, TRUE);
+				SleepEx(INFINITE, TRUE); // приостанавливает исполнение текущего потока до тех пор, пока не закончится I/O колбэка
 
-			LONGLONG nBytes = nRecords * totalBlock;
-
-			SetFilePointer(outFileHandle, -(nBytes - fileSize.QuadPart), NULL, FILE_END);
-			SetEndOfFile(outFileHandle);
-
+			LONGLONG nBytes = nRecords * totalBlock; // общий размер блоков (всех вместе)
 			finish = timeGetTime();
 
 			cout << endl << "Время копирования в миллисекундах: " << finish - start << endl;

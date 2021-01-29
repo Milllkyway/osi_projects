@@ -19,13 +19,24 @@ int main()
 	cout << endl << "Введите полный путь к файлу для работы: ";
 	cin >> file_path;
 
-	hFile = CreateFileA((LPCSTR)file_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	hFile = CreateFileA((LPCSTR)file_path.c_str(),
+						 GENERIC_READ | GENERIC_WRITE, 
+						 0,								// совместный доступ
+						 NULL,							// дескриптор защиты (NULL - десриптор по умолч.)
+						 CREATE_ALWAYS,					
+						 0,								// атрибуты и флаги файла
+						 NULL);							// должен быть NULL, иначе ошибка
 	if (hFile) {
 		cout << "Файл успешно открылся. " << endl;
 		cout << endl << "Введите дескриптор потока: ";
 		cin >> threadDesc;
 
-		hMap = CreateFileMapping(hFile, 0, PAGE_READWRITE, 0, 4096, (LPCWSTR)threadDesc.c_str());
+		hMap = CreateFileMapping(hFile,							// дескриптор файла
+								 0,								// указатель на структуру SECURITY_ATTRIBUTES (0 - не может быть унаследован)
+								 PAGE_READWRITE,				// атрибуты защиты
+								 0,								// старшее слово максимального размера проецируемого файла
+								 4096,							// младшее слово (если тут 0 и в предыдущем, то размер = размеру hFile)
+								 (LPCWSTR)threadDesc.c_str());	// имя проецируемого файла
 		if (hMap) {
 			cout << endl << "Введите данные, которые хотите записать в файл: " << endl;
 			cin.ignore();
@@ -33,7 +44,11 @@ int main()
 			
 			//cout << "My data: " << dataToWrite;
 
-			adOfMapView = MapViewOfFile(hMap, FILE_MAP_WRITE, 0, 0, NULL);
+			adOfMapView = MapViewOfFile(hMap,				// дескриптор проецируемого файла
+										FILE_MAP_WRITE,		// режим доступа
+										0,					// старшее DWORD смещения
+										0,					// младшее
+										NULL);				// число отображаемых байтов (0 значит весь файл)
 			if (adOfMapView) {
 				CopyMemory(adOfMapView, (char*)dataToWrite.c_str(), dataToWrite.length() * sizeof(char));
 				cout << endl;

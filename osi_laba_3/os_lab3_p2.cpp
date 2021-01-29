@@ -22,13 +22,14 @@ int main()
     cout << "Введите количество потоков: ";
     cin >> threadsNum;
 
-    // reduction необходима для предоставления частных копий piCounted для каждого потока
-    // schedule необходима для динамического планирования по блокам нужного размера
+    //  задает число потоков для выполнения следующего параллельного региона, который встретится текущему выполняемому потоку
     omp_set_num_threads(threadsNum);
     
     start = timeGetTime();
 
-    #pragma omp parallel for schedule(dynamic,blockSize) reduction (+:piCounted)
+    // reduction необходима для предоставления частных копий piCounted для каждого потока
+    // schedule необходима для динамического планирования по блокам нужного размера (т.е. количество итераций = blockSize)
+    #pragma omp parallel for schedule(dynamic, blockSize) reduction (+:piCounted)
     for (int i = 0; i < N; i++) {
         // x должна быть частной, поэтому объявляеться локально
         long double x = (i + 0.5) * 1. / N;

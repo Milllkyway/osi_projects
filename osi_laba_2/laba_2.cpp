@@ -145,7 +145,7 @@ void myGetSysInfo() {
         break;
     }
 
-    cout << endl << "   Размер страницы и гранулярность страничной защиты и обязательства: " << myInfo.dwPageSize;
+    cout << endl << "   Размер страницы и гранулярность страничной защиты и обязательства: " << myInfo.dwPageSize; // размер страницы, используемой VirtualAlloc
     cout << endl << "   Указатель на младший адрес памяти, доступный приложениям и DLL: " << myInfo.lpMinimumApplicationAddress;
     cout << endl << "   Указатель на старший адрес памяти, доступный приложениям и DLL: " << myInfo.lpMaximumApplicationAddress;
     cout << endl << "   Маска, представляющая набор процессоров, сконфигурированных в системе: " << myInfo.dwActiveProcessorMask
@@ -153,7 +153,7 @@ void myGetSysInfo() {
     cout << endl << "   Количество процессоров в системе: " << myInfo.dwNumberOfProcessors;
     cout << endl << "   Гранулярность для начального адреса (для виртуальной памяти): " << myInfo.dwAllocationGranularity;
     cout << endl << "   Уровень архитектурно-зависимого прицессора системы: " << myInfo.wProcessorLevel;
-    cout << endl << "   Ревизия архитектурно-зависимого процессора: " << myInfo.wProcessorRevision;
+    cout << endl << "   Ревизия архитектурно-зависимого процессора: " << myInfo.wProcessorRevision; // определенные ревизии для разных типов архитектуры процессоров
 
     cout << endl << endl;
 }
@@ -181,7 +181,8 @@ void myGlMemStatus() {
         << long double(statex.ullTotalVirtual) / 1024 / 1024 / 1024 << " Gb)";
     cout << endl << "   Объем доступной виртуальной памяти: " << statex.ullAvailVirtual << " ("
         << long double(statex.ullAvailVirtual) / 1024 / 1024 / 1024 << " Gb)";
-    cout << endl << "   Объем незарезервированной памяти в расширенной части виртуальной памяти в байтах: " << statex.ullAvailExtendedVirtual;
+    cout << endl << "   Объем незарезервированной памяти в расширенной части виртуальной памяти в байтах: "
+        << statex.ullAvailExtendedVirtual;
 
     cout << endl << endl;
 }
@@ -196,21 +197,27 @@ void myVirtQuery() {
     cout << endl << "   Введите адрес для работы (HEX): ";
     cin >> hex >> orig;
 
-    retval = VirtualQuery((LPCVOID)orig, &myMem, sizeof(myMem));
+    retval = VirtualQuery((LPCVOID)orig,        // Адрес виртуальной памяти, о котором следует получить информацию
+                            &myMem,             // Адрес структуры MEMORY_BASIC_INFORMATION
+                            sizeof(myMem));     // Размер структуры
     if (!retval) cout << endl <<"   Programm fails with code " << GetLastError();
     else {
-        cout << endl <<"   Указатель на базовый адрес региона страниц: " << myMem.BaseAddress << endl;
+        // сообщает то же значение, что и параметр lpAddress, но округленное до ближайшего меньшего адреса, кратного размеру страницы
+        cout << endl <<"   Указатель на базовый адрес региона страниц: " << myMem.BaseAddress << endl; 
+        // идентифицирует базовый адрес региона, включающего в себя адрес, указанный в параметре lpAddress
         cout << "   Указатель на базовый адрес диапазона страниц, выделенных пользователем: " << myMem.AllocationBase << endl;
+        // идентифицирует атрибут защиты, присвоенный региону при его резервировании
         cout << "   Доступна ли память при первоначальном выделении области (да / нет): ";
         (myMem.AllocationProtect == 0) ? cout << "нет" : cout << "да"; 
         cout << endl;
+        // сообщает суммарный размер группы страниц, которые начинаются с базового адреса BaseAddress и имеют те же параметры, что и у lpAddress
         cout << "   Размер региона, начинающейся с базового адреса с одинаковыми атрибутами защиты: " << myMem.RegionSize << " байт " 
             << " (" << long double(myMem.RegionSize) / 1024 / 1024  << " Mb)" << endl;
 
         if (myMem.State & MEM_COMMIT)
         {
             cout << endl << "   Состояние страниц в регионе: ";
-            cout << endl << "      Зафиксированная страница (MEM_COMMIT)";
+            cout << endl << "      Зафиксированная страница (MEM_COMMIT)"; // которой передана физическая память
         }
         if (myMem.State & MEM_RESERVE) {
             cout << endl << "   Состояние страниц в регионе: ";
@@ -252,7 +259,10 @@ void myVirtAllocReserve() {
     switch (ans)
     {
         case 1:
-            p = VirtualAlloc(NULL, MEMSIZE, MEM_RESERVE | MEM_TOP_DOWN, PAGE_READONLY);
+            p = VirtualAlloc(NULL,                          // базовый адрес (если 0, то система сама выбирает адрес)
+                             MEMSIZE,                       // размер
+                             MEM_RESERVE | MEM_TOP_DOWN,    // способ получения (2 - память выделяется в области верхних адресов памяти приложения)
+                             PAGE_READONLY);                // тип доступа
             break;
         case 2:
             cout << endl << "   Введите адрес для работы (HEX): ";
@@ -313,6 +323,17 @@ void myMemWrite() {
     string dataToWrite;
     MEMORY_BASIC_INFORMATION myMem;
 
+    /*typedef struct _MEMORY_BASIC_INFORMATION {
+        PVOID  BaseAddress;                         // Указатель на базовый адрес области страниц.
+        PVOID  AllocationBase;                      // Указатель на базовый адрес диапазона страниц, выделенных функцией VirtualAlloc
+        DWORD  AllocationProtect;                   // Опция защиты памяти при первоначальном выделении области
+        WORD   PartitionId;
+        SIZE_T RegionSize;                          // Размер области, начинающейся с базового адреса, в котором все страницы имеют одинаковые атрибуты
+        DWORD  State;                               // Состояние страниц в регионе
+        DWORD  Protect;                             // Защита доступа к страницам в регионе
+        DWORD  Type;                                // Тип страниц в регионе (MEM_IMAGE, MEM_MAPPED, MEM_PRIVATE)
+    } MEMORY_BASIC_INFORMATION*/
+
     cout << endl << "   Введите адрес для работы (HEX): ";
     cin >> hex >> orig;
 
@@ -366,6 +387,7 @@ void kindOfProtect(DWORD prot) {
     }
 }
 
+// устанавливает атрибуты на блоки памяти
 void myVirtProtect() {
     int ans, orig;
     DWORD myOldProtect, myNewProtect = 0;
