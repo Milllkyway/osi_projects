@@ -5,17 +5,26 @@
 using namespace std;
 
 void WINAPI ReadCallback(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped) {
-	cout << "get message - done." << endl;
+	cout << "Get message - DONE." << endl;
 }
-
 
 int main() {
 	CHAR mes[256];
 	bool flag = false;
 	LPCTSTR name = TEXT("\\\\.\\pipe\\pipeName");
 	OVERLAPPED overlapped = OVERLAPPED(), olPipe = OVERLAPPED();
-	HANDLE event = CreateEvent(NULL, FALSE, FALSE, NULL);
-	HANDLE newPipe = CreateNamedPipe(name, PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, 256, 256, 0, NULL);
+	HANDLE event = CreateEvent(NULL,  // атрибуты защиты
+							   FALSE, // 0 - автоматический сброс после освобождения одного ожидающего потока.
+							   FALSE, // начальное состояние события не сигнализируется
+							   NULL); // объект создается без имени
+	HANDLE newPipe = CreateNamedPipe(name, 
+									 PIPE_ACCESS_DUPLEX, 
+									 PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, // 1 - данные записываются в канал в виде потока сообщений, 2 - считываются так же, 3 - вкл режим блокировки
+									 PIPE_UNLIMITED_INSTANCES, // max число экземпляров канала (у нас 255)
+									 256, // Количество байтов, зарезервированных для выходного буфера
+									 256, // Количество байтов, зарезервированных для входного буфера
+									 0,   // значение таймаута
+									 NULL);  // дескриптор не мб унаследован
 
 	int ans = 10;
 
